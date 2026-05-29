@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QueroCon­sulta — Dados de CPF, CNPJ, Placa e Processos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root {
+  --ink:      #0C0C0E;
+  --ink2:     #141418;
+  --ink3:     #1C1C22;
+  --amber:    #F5A623;
+  --amber2:   #FFBE4D;
+  --amber-g:  linear-gradient(135deg,#F5A623 0%,#FF6B35 100%);
+  --amber-dim:rgba(245,166,35,.12);
+  --amber-gl: rgba(245,166,35,.3);
+  --coral:    #FF6B35;
+  --white:    #F2F0EB;
+  --muted:    #7A7870;
+  --muted2:   #4A4845;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(245,166,35,.22);
+  --r:        12px;
+  --rl:       20px;
+  --tr:       .28s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--ink);
+  color:var(--white);
+  overflow-x:hidden;
+  line-height:1.6;
+}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:var(--amber-dim);border-radius:3px}
+
+/* ── NOISE OVERLAY ── */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.022;
+  pointer-events:none;
+  z-index:9998;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:var(--amber);
+  color:var(--ink);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.9rem;letter-spacing:.04em;
+  text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:9px 16px;
+  cursor:pointer;
+  transition:opacity var(--tr);
+}
+#topbar:hover{opacity:.9}
+#topbar .tb-pill{
+  background:var(--ink);color:var(--amber);
+  padding:2px 10px;border-radius:50px;font-size:.78rem;
+}
+#topbar .tb-close{
+  position:absolute;right:16px;background:none;border:none;
+  font-size:1rem;cursor:pointer;color:var(--ink);opacity:.5;
+  transition:opacity var(--tr);
+}
+#topbar .tb-close:hover{opacity:1}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav{
+  position:fixed;top:38px;left:0;right:0;z-index:999;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(16px,5vw,72px);
+  height:64px;
+  background:rgba(12,12,14,.88);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  transition:top .3s;
+}
+nav.nobar{top:0}
+
+.logo{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:1.55rem;
+  letter-spacing:-.01em;text-decoration:none;color:var(--white);
+  display:flex;align-items:center;gap:6px;
+}
+.logo em{color:var(--amber);font-style:normal}
+.logo-icon{
+  width:30px;height:30px;
+  background:var(--amber-g);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;color:var(--ink);
+}
+
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{
+  text-decoration:none;color:var(--muted);
+  font-size:.88rem;font-weight:500;
+  transition:color var(--tr);
+}
+.nav-links a:hover{color:var(--white)}
+
+.btn-nav{
+  background:var(--amber-g);
+  color:var(--ink) !important;
+  font-weight:700 !important;
+  padding:9px 20px;border-radius:50px;
+  font-size:.85rem !important;
+  transition:transform var(--tr),box-shadow var(--tr) !important;
+  white-space:nowrap;
+}
+.btn-nav:hover{
+  transform:translateY(-1px) !important;
+  box-shadow:0 6px 20px var(--amber-gl) !important;
+}
+
+.hamburger{
+  display:none;flex-direction:column;gap:5px;
+  background:none;border:none;cursor:pointer;padding:4px;
+}
+.hamburger span{
+  display:block;width:22px;height:2px;
+  background:var(--white);border-radius:2px;
+  transition:all var(--tr);
+}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+.mob-menu{
+  display:none;position:fixed;
+  top:102px;left:0;right:0;
+  background:rgba(12,12,14,.97);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:24px clamp(16px,5vw,72px);
+  flex-direction:column;gap:4px;z-index:998;
+}
+.mob-menu.open{display:flex}
+.mob-menu a{
+  text-decoration:none;color:var(--muted);
+  padding:13px 0;border-bottom:1px solid var(--border);
+  font-size:1rem;font-weight:500;
+  transition:color var(--tr);
+}
+.mob-menu a:hover{color:var(--white)}
+.mob-menu .mob-cta{
+  margin-top:12px;
+  background:var(--amber-g);
+  color:var(--ink);font-weight:700;
+  padding:15px;text-align:center;
+  border-radius:var(--r);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:1.05rem;letter-spacing:.05em;text-transform:uppercase;
+}
+
+/* ============================================================
+   LAYOUT HELPERS
+   ============================================================ */
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding:0 clamp(16px,5vw,60px)}
+section{position:relative;z-index:1}
+
+.label{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--border2);
+  background:var(--amber-dim);
+  color:var(--amber);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 14px;border-radius:50px;margin-bottom:14px;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+#hero{
+  padding-top:clamp(130px,18vw,165px);
+  padding-bottom:clamp(60px,8vw,100px);
+  min-height:100svh;
+  display:flex;align-items:center;
+  overflow:hidden;
+}
+
+/* big decorative number bg */
+#hero::before{
+  content:'DATA';
+  position:absolute;
+  right:-2%;top:50%;
+  transform:translateY(-50%);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;
+  font-size:clamp(120px,22vw,280px);
+  color:rgba(245,166,35,.04);
+  letter-spacing:-.04em;
+  user-select:none;pointer-events:none;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.hero-inner{
+  display:grid;
+  grid-template-columns:1fr 420px;
+  gap:48px;align-items:center;
+}
+
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(245,166,35,.1);
+  border:1px solid var(--border2);
+  border-radius:50px;
+  padding:7px 16px;
+  font-size:.82rem;font-weight:600;color:var(--amber2);
+  margin-bottom:24px;
+  animation:slideDown .5s ease both;
+}
+.pulse{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--amber);
+  animation:blink 1.4s infinite;
+}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+h1.htitle{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;
+  font-size:clamp(3.2rem,7.5vw,6.5rem);
+  line-height:.95;letter-spacing:-.02em;
+  text-transform:uppercase;
+  margin-bottom:20px;
+  animation:slideUp .6s .1s ease both;
+}
+h1.htitle em{
+  font-style:normal;
+  background:var(--amber-g);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.hero-type-line{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:clamp(1.15rem,2.5vw,1.55rem);
+  letter-spacing:.02em;color:var(--muted);
+  margin-bottom:20px;
+  text-transform:uppercase;
+  animation:slideUp .6s .2s ease both;
+  min-height:2em;
+}
+.hero-type-line .cursor{
+  color:var(--amber);
+  border-right:2px solid var(--amber);
+  padding-right:3px;
+  animation:cur .8s step-end infinite;
+}
+@keyframes cur{from,to{border-color:transparent}50%{border-color:var(--amber)}}
+
+.hero-sub{
+  font-size:1rem;color:var(--muted);
+  line-height:1.7;max-width:520px;
+  margin-bottom:36px;
+  animation:slideUp .6s .3s ease both;
+}
+
+.hero-search-box{
+  background:var(--ink3);
+  border:1px solid var(--border);
+  border-radius:var(--rl);
+  padding:20px;
+  margin-bottom:24px;
+  animation:slideUp .6s .4s ease both;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.hero-search-box:focus-within{
+  border-color:var(--border2);
+  box-shadow:0 0 0 3px var(--amber-dim);
+}
+.hsb-label{font-size:.75rem;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.hsb-row{display:flex;gap:10px}
+.hsb-row input{
+  flex:1;background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--r);padding:13px 16px;
+  color:var(--white);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.92rem;outline:none;
+  transition:border-color var(--tr);
+}
+.hsb-row input::placeholder{color:var(--muted2)}
+.hsb-row input:focus{border-color:var(--border2)}
+.hsb-btn{
+  background:var(--amber-g);color:var(--ink);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:1rem;
+  letter-spacing:.06em;text-transform:uppercase;
+  border:none;border-radius:var(--r);
+  padding:13px 24px;cursor:pointer;
+  white-space:nowrap;
+  transition:transform var(--tr),box-shadow var(--tr);
+  display:flex;align-items:center;gap:6px;
+}
+.hsb-btn:hover{transform:scale(1.04);box-shadow:0 6px 22px var(--amber-gl)}
+
+.hero-pills{
+  display:flex;flex-wrap:wrap;gap:8px;
+  animation:slideUp .6s .5s ease both;
+}
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--ink3);border:1px solid var(--border);
+  color:var(--muted);font-size:.78rem;font-weight:500;
+  padding:5px 12px;border-radius:50px;
+  cursor:pointer;
+  transition:border-color var(--tr),color var(--tr),background var(--tr);
+}
+.pill:hover{border-color:var(--border2);color:var(--amber);background:var(--amber-dim)}
+.pill i{font-size:.75rem}
+
+/* HERO STATS PANEL */
+.hero-panel{
+  animation:slideRight .7s .3s ease both;
+}
+.hp-top{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--rl);padding:28px;
+  margin-bottom:14px;
+  position:relative;overflow:hidden;
+}
+.hp-top::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 80% 20%,rgba(245,166,35,.08) 0%,transparent 60%);
+}
+.hp-live{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.2);
+  color:var(--coral);
+  font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 10px;border-radius:50px;margin-bottom:16px;
+}
+.hp-live span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--coral);animation:blink 1s infinite;
+}
+.hp-num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:3.6rem;
+  line-height:1;color:var(--white);
+  letter-spacing:-.02em;margin-bottom:4px;
+}
+.hp-num em{color:var(--amber);font-style:normal}
+.hp-desc{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+.hp-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.hp-bar-fill{
+  height:100%;border-radius:2px;
+  background:var(--amber-g);
+  width:0%;
+  transition:width 2s cubic-bezier(.4,0,.2,1);
+}
+
+.hp-stats{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.hp-stat{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;
+  transition:border-color var(--tr),transform var(--tr);
+}
+.hp-stat:hover{border-color:var(--border2);transform:translateY(-2px)}
+.hp-stat-val{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:1.6rem;color:var(--amber2);
+  line-height:1;margin-bottom:3px;
+}
+.hp-stat-key{font-size:.74rem;color:var(--muted);letter-spacing:.04em}
+
+@keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+
+/* ============================================================
+   HOW SECTION — horizontal scroll cards mobile
+   ============================================================ */
+#how{
+  padding:clamp(70px,10vw,110px) 0;
+  background:var(--ink2);
+  border-top:1px solid var(--border);
+}
+.how-header{margin-bottom:48px}
+.how-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;text-transform:uppercase;
+  font-size:clamp(2.2rem,5vw,3.8rem);
+  letter-spacing:-.02em;line-height:1.05;
+}
+.how-title em{font-style:normal;color:var(--amber)}
+
+.how-steps{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:2px;
+  background:var(--border);
+  border-radius:var(--rl);overflow:hidden;
+}
+.step{
+  background:var(--ink2);
+  padding:36px 30px;
+  position:relative;
+  transition:background var(--tr);
+}
+.step:hover{background:var(--ink3)}
+.step-num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:5rem;
+  color:rgba(245,166,35,.08);
+  line-height:1;
+  position:absolute;top:16px;right:20px;
+  user-select:none;
+}
+.step-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:var(--amber-dim);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;color:var(--amber);
+  margin-bottom:20px;
+}
+.step h3{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:1.25rem;
+  text-transform:uppercase;letter-spacing:.04em;
+  margin-bottom:10px;
+}
+.step p{font-size:.88rem;color:var(--muted);line-height:1.65}
+
+.step-connector{
+  position:absolute;top:50%;right:-1px;
+  transform:translateY(-50%);
+  width:24px;height:24px;
+  background:var(--amber-g);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;color:var(--ink);z-index:2;
+}
+.step:last-child .step-connector{display:none}
+
+/* ============================================================
+   PLANS — bento style
+   ============================================================ */
+#plans{
+  padding:clamp(70px,10vw,110px) 0;
+  background:var(--ink);
+}
+.plans-top{
+  display:flex;align-items:flex-end;
+  justify-content:space-between;
+  gap:24px;margin-bottom:48px;flex-wrap:wrap;
+}
+.plans-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;text-transform:uppercase;
+  font-size:clamp(2.2rem,5vw,3.8rem);
+  letter-spacing:-.02em;line-height:1;
+}
+.plans-title em{font-style:normal;color:var(--amber)}
+.tab-toggle{
+  display:flex;gap:2px;
+  background:var(--ink3);border:1px solid var(--border);
+  border-radius:50px;padding:4px;
+}
+.ttab{
+  padding:9px 22px;border-radius:50px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.88rem;letter-spacing:.05em;text-transform:uppercase;
+  border:none;background:none;color:var(--muted);
+  cursor:pointer;transition:all var(--tr);
+}
+.ttab.on{background:var(--amber-g);color:var(--ink);box-shadow:0 4px 14px var(--amber-gl)}
+
+.bento{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.bento-hide{display:none !important}
+
+.pc{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--rl);padding:28px 24px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  transition:transform var(--tr),border-color var(--tr),box-shadow var(--tr);
+}
+.pc:hover{
+  transform:translateY(-5px);
+  border-color:var(--border2);
+  box-shadow:0 20px 48px rgba(0,0,0,.5);
+}
+.pc.hot{
+  border-color:var(--amber);
+  background:linear-gradient(160deg,rgba(245,166,35,.06) 0%,var(--ink2) 60%);
+}
+.pc-badge{
+  position:absolute;top:0;left:0;right:0;
+  background:var(--amber-g);
+  color:var(--ink);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:.72rem;letter-spacing:.12em;
+  text-transform:uppercase;text-align:center;
+  padding:5px;
+}
+.pc-name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.8rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);
+  margin-bottom:6px;
+}
+.pc-count{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:2rem;color:var(--white);
+  line-height:1;margin-bottom:2px;
+}
+.pc-validity{font-size:.76rem;color:var(--muted2);margin-bottom:14px}
+.pc-price{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:2.8rem;color:var(--amber);
+  line-height:1;margin-bottom:2px;letter-spacing:-.01em;
+}
+.pc-price sup{font-size:1.2rem;vertical-align:top;margin-top:8px}
+.pc-each{font-size:.8rem;color:var(--muted);margin-bottom:18px}
+.pc-each strong{color:#7AE89E}
+
+.pc-ul{list-style:none;flex:1;margin-bottom:18px}
+.pc-ul li{
+  display:flex;align-items:flex-start;gap:7px;
+  font-size:.83rem;color:var(--muted);
+  padding:5px 0;border-bottom:1px solid var(--border);
+}
+.pc-ul li:last-child{border:none}
+.pc-ul i{color:var(--amber);font-size:.8rem;margin-top:3px;flex-shrink:0}
+
+.pc-extra{font-size:.76rem;color:var(--muted2);margin-bottom:16px}
+.pc-extra strong{color:var(--amber2)}
+
+.nexp{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(122,232,158,.1);border:1px solid rgba(122,232,158,.2);
+  color:#7AE89E;font-size:.72rem;font-weight:600;
+  padding:4px 10px;border-radius:50px;margin-bottom:14px;
+}
+
+.btn-plan{
+  width:100%;padding:13px;border:none;border-radius:var(--r);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:.95rem;letter-spacing:.07em;text-transform:uppercase;
+  cursor:pointer;
+  transition:transform var(--tr),box-shadow var(--tr);
+}
+.btn-plan-p{background:var(--amber-g);color:var(--ink)}
+.btn-plan-p:hover{transform:scale(1.03);box-shadow:0 6px 20px var(--amber-gl)}
+.btn-plan-o{background:none;border:1.5px solid var(--border);color:var(--muted)}
+.btn-plan-o:hover{border-color:var(--border2);color:var(--amber);transform:scale(1.02)}
+
+.plans-note{
+  text-align:center;margin-top:22px;
+  font-size:.83rem;color:var(--muted2);
+}
+.plans-note i{color:#7AE89E;margin-right:4px}
+.plans-note strong{color:var(--muted)}
+
+/* ============================================================
+   BENEFITS — alternating layout
+   ============================================================ */
+#benefits{
+  padding:clamp(70px,10vw,110px) 0;
+  background:var(--ink2);
+  border-top:1px solid var(--border);
+}
+.ben-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2px;background:var(--border);
+  border-radius:var(--rl);overflow:hidden;
+  margin-top:48px;
+}
+.ben-card{
+  background:var(--ink2);padding:32px 28px;
+  transition:background var(--tr);
+}
+.ben-card:hover{background:rgba(245,166,35,.04)}
+.ben-ico{
+  width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;margin-bottom:18px;
+}
+.ic-a{background:var(--amber-dim);border:1px solid var(--border2);color:var(--amber)}
+.ic-c{background:rgba(122,232,158,.1);border:1px solid rgba(122,232,158,.2);color:#7AE89E}
+.ic-r{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--coral)}
+.ben-card h4{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:1.05rem;
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;
+}
+.ben-card p{font-size:.85rem;color:var(--muted);line-height:1.65}
+
+/* ============================================================
+   SOCIAL PROOF
+   ============================================================ */
+#social{
+  padding:clamp(70px,10vw,110px) 0;
+  background:var(--ink);
+}
+.social-top{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:24px;margin-bottom:48px;flex-wrap:wrap;
+}
+.social-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;text-transform:uppercase;
+  font-size:clamp(2.2rem,5vw,3.8rem);
+  letter-spacing:-.02em;line-height:1;
+}
+.social-title em{font-style:normal;color:var(--amber)}
+
+.big-trust{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+}
+.trust-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--ink3);border:1px solid var(--border);
+  border-radius:var(--r);padding:12px 16px;
+  font-size:.82rem;color:var(--muted);
+  transition:border-color var(--tr);
+}
+.trust-pill:hover{border-color:var(--border2);color:var(--white)}
+.trust-pill i{font-size:1rem}
+.trust-pill .ti-a{color:var(--amber)}
+.trust-pill .ti-g{color:#7AE89E}
+.trust-pill .ti-r{color:var(--coral)}
+
+.testi-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+}
+.tc{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--rl);padding:24px;
+  transition:border-color var(--tr),transform var(--tr);
+}
+.tc:hover{border-color:var(--border2);transform:translateY(-3px)}
+.tc-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.tc-av{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:1rem;color:var(--ink);
+}
+.av1{background:var(--amber-g)}
+.av2{background:linear-gradient(135deg,#7AE89E,#00C4A7)}
+.av3{background:linear-gradient(135deg,#FF6B35,#FF4D6D)}
+.av4{background:linear-gradient(135deg,#a78bfa,#6366f1)}
+.tc-meta h5{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.98rem;
+  text-transform:uppercase;letter-spacing:.03em;
+}
+.tc-meta small{font-size:.75rem;color:var(--muted)}
+.tc-stars{margin-left:auto;display:flex;gap:3px}
+.tc-stars i{color:var(--amber);font-size:.75rem}
+.tc-text{font-size:.87rem;color:var(--muted);line-height:1.65}
+
+/* big counter */
+.counter-banner{
+  background:linear-gradient(135deg,rgba(245,166,35,.08) 0%,rgba(255,107,53,.08) 100%);
+  border:1px solid var(--border2);border-radius:var(--rl);
+  padding:clamp(32px,5vw,52px);
+  margin-top:40px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:32px;flex-wrap:wrap;
+}
+.cb-left{flex:1;min-width:200px}
+.cb-num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;
+  font-size:clamp(3rem,7vw,5.5rem);
+  letter-spacing:-.03em;line-height:1;
+  background:var(--amber-g);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.cb-desc{font-size:.9rem;color:var(--muted);margin-top:6px}
+.cb-right{
+  display:flex;gap:28px;flex-wrap:wrap;
+}
+.cb-stat{text-align:center}
+.cb-stat-val{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:2rem;color:var(--white);
+  line-height:1;margin-bottom:4px;
+}
+.cb-stat-key{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* ============================================================
+   FAQ
+   ============================================================ */
+#faq{
+  padding:clamp(70px,10vw,110px) 0;
+  background:var(--ink2);
+  border-top:1px solid var(--border);
+}
+.faq-layout{
+  display:grid;grid-template-columns:340px 1fr;
+  gap:64px;margin-top:48px;align-items:start;
+}
+.faq-left h3{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;text-transform:uppercase;
+  font-size:clamp(1.8rem,3.5vw,2.8rem);
+  letter-spacing:-.02em;line-height:1.1;
+  margin-bottom:16px;
+}
+.faq-left h3 em{font-style:normal;color:var(--amber)}
+.faq-left p{font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:24px}
+.faq-left .btn-wpp{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#25D366;color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:13px 24px;border-radius:var(--r);
+  text-decoration:none;border:none;cursor:pointer;
+  transition:transform var(--tr),box-shadow var(--tr);
+}
+.faq-left .btn-wpp:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,211,102,.35)}
+
+.faqs{display:flex;flex-direction:column;gap:8px}
+.fi{
+  background:var(--ink);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  transition:border-color var(--tr);
+}
+.fi.open{border-color:var(--border2)}
+.fq{
+  width:100%;background:none;border:none;
+  padding:18px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  text-align:left;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:.98rem;
+  text-transform:uppercase;letter-spacing:.03em;color:var(--white);
+  transition:color var(--tr);
+}
+.fq:hover{color:var(--amber)}
+.fq i{color:var(--amber);font-size:.8rem;flex-shrink:0;transition:transform var(--tr)}
+.fi.open .fq i{transform:rotate(180deg)}
+.fa-body{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1)}
+.fi.open .fa-body{max-height:260px}
+.fa-body p{
+  padding:0 20px 18px;font-size:.87rem;color:var(--muted);line-height:1.7;
+  border-top:1px solid var(--border);padding-top:14px;
+}
+
+/* ============================================================
+   CTA SECTION
+   ============================================================ */
+#cta{
+  padding:clamp(60px,8vw,100px) 0;
+  background:var(--ink);
+}
+.cta-box{
+  background:var(--ink2);border:1px solid var(--border);
+  border-radius:var(--rl);
+  padding:clamp(40px,6vw,72px);
+  display:grid;grid-template-columns:1fr auto;
+  gap:40px;align-items:center;
+  position:relative;overflow:hidden;
+}
+.cta-box::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 100% 50%,rgba(245,166,35,.08) 0%,transparent 55%);
+  pointer-events:none;
+}
+.cta-box::after{
+  content:'→';
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:clamp(100px,20vw,200px);
+  color:rgba(245,166,35,.04);
+  position:absolute;right:-20px;top:50%;
+  transform:translateY(-50%);
+  line-height:1;
+  pointer-events:none;user-select:none;
+}
+.cta-text h2{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-style:italic;text-transform:uppercase;
+  font-size:clamp(2rem,4.5vw,3.5rem);
+  letter-spacing:-.02em;line-height:1;margin-bottom:12px;
+}
+.cta-text h2 em{font-style:normal;color:var(--amber)}
+.cta-text p{font-size:.95rem;color:var(--muted);line-height:1.65}
+.cta-btns{display:flex;flex-direction:column;gap:10px;min-width:200px;position:relative;z-index:1}
+.btn-cta-p{
+  background:var(--amber-g);color:var(--ink);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:1rem;letter-spacing:.07em;text-transform:uppercase;
+  padding:16px 28px;border:none;border-radius:var(--r);cursor:pointer;
+  white-space:nowrap;
+  transition:transform var(--tr),box-shadow var(--tr);
+  display:flex;align-items:center;gap:7px;justify-content:center;
+}
+.btn-cta-p:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--amber-gl)}
+.btn-cta-w{
+  background:#25D366;color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:1rem;letter-spacing:.07em;text-transform:uppercase;
+  padding:16px 28px;border:none;border-radius:var(--r);cursor:pointer;
+  white-space:nowrap;
+  transition:transform var(--tr),box-shadow var(--tr);
+  display:flex;align-items:center;gap:7px;justify-content:center;
+  text-decoration:none;
+}
+.btn-cta-w:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,211,102,.35)}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{
+  background:var(--ink2);
+  border-top:1px solid var(--border);
+  padding:60px 0 28px;
+}
+.foot-grid{
+  display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;
+  gap:40px;margin-bottom:48px;
+}
+.foot-logo-p{
+  font-size:.86rem;color:var(--muted);
+  line-height:1.7;margin-top:14px;max-width:240px;
+}
+.foot-col h6{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.85rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:16px;
+}
+.foot-col ul{list-style:none}
+.foot-col ul li{margin-bottom:9px}
+.foot-col ul li a{
+  text-decoration:none;font-size:.85rem;color:var(--muted2);
+  transition:color var(--tr);
+}
+.foot-col ul li a:hover{color:var(--amber)}
+.foot-bot{
+  border-top:1px solid var(--border);padding-top:24px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.foot-bot p{font-size:.8rem;color:var(--muted2)}
+.foot-seals{display:flex;gap:16px}
+.fseal{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted2)}
+.fseal i{color:var(--amber)}
+
+/* ============================================================
+   WHATSAPP FLOAT
+   ============================================================ */
+.wpp-float{
+  position:fixed;bottom:26px;right:26px;
+  z-index:9999;
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+}
+.wpp-tip{
+  background:var(--ink3);border:1px solid var(--border);
+  border-radius:var(--r);padding:9px 14px;
+  font-size:.8rem;color:var(--muted);white-space:nowrap;
+  opacity:0;transform:translateY(5px);
+  transition:all var(--tr);pointer-events:none;
+  backdrop-filter:blur(12px);
+}
+.wpp-float:hover .wpp-tip{opacity:1;transform:translateY(0)}
+.wpp-btn{
+  width:54px;height:54px;border-radius:50%;
+  background:#25D366;color:#fff;text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.45rem;
+  box-shadow:0 4px 20px rgba(37,211,102,.4);
+  transition:transform var(--tr),box-shadow var(--tr);
+  animation:wppPop 3.5s 2s ease infinite;
+}
+.wpp-btn:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(37,211,102,.55)}
+@keyframes wppPop{
+  0%,65%,100%{transform:scale(1)}
+  70%{transform:scale(1.12)}
+  80%{transform:scale(.95)}
+  85%{transform:scale(1.08)}
+}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease}
+.rv.in{opacity:1;transform:translateY(0)}
+.rv-r{opacity:0;transform:translateX(20px);transition:opacity .65s ease,transform .65s ease}
+.rv-r.in{opacity:1;transform:translateX(0)}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:1024px){
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-panel{max-width:460px}
+  .hp-stats{grid-template-columns:repeat(4,1fr)}
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:28px}
+  .faq-layout{grid-template-columns:1fr;gap:32px}
+  .cta-box{grid-template-columns:1fr;text-align:center}
+  .cta-btns{flex-direction:row;justify-content:center}
+}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .how-steps{grid-template-columns:1fr}
+  .step-connector{display:none}
+  .ben-grid{grid-template-columns:1fr}
+  .testi-grid{grid-template-columns:1fr}
+  .bento{grid-template-columns:1fr}
+  .counter-banner{flex-direction:column;gap:24px}
+  .cb-right{justify-content:space-around}
+  .cta-btns{flex-direction:column;width:100%}
+  .plans-top{flex-direction:column;align-items:flex-start}
+  .social-top{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:480px){
+  .foot-grid{grid-template-columns:1fr}
+  .hero-title{font-size:2.8rem}
+  .hsb-row{flex-direction:column}
+  .hp-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <span class="tb-pill">NOVO</span>
+  🚀 <strong>3 consultas grátis</strong> para novos usuários — Cadastre-se agora
+  <button class="tb-close" onclick="closeBar()" aria-label="Fechar">✕</button>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo">
+    <div class="logo-icon"><i class="fa-solid fa-database"></i></div>
+    Quero<em>Consulta</em>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#how">Como funciona</a></li>
+    <li><a href="#plans">Planos</a></li>
+    <li><a href="#social">Depoimentos</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="https://wa.me/5521967519632" target="_blank" class="btn-nav"><i class="fa-brands fa-whatsapp"></i> Falar agora</a></li>
+  </ul>
+  <button class="hamburger" id="hbg" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mob-menu" id="mobMenu">
+  <a href="#how"       onclick="mClose()">Como funciona</a>
+  <a href="#plans"     onclick="mClose()">Planos</a>
+  <a href="#social"    onclick="mClose()">Depoimentos</a>
+  <a href="#faq"       onclick="mClose()">FAQ</a>
+  <a href="https://wa.me/5521967519632" target="_blank" class="mob-cta" onclick="mClose()"><i class="fa-brands fa-whatsapp"></i> Falar pelo WhatsApp</a>
+</div>
+
+<!-- ========================================================== HERO -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="hero-tag">
+          <span class="pulse"></span>
+          Plataforma ativa em tempo real
+        </div>
+        <h1 class="htitle">
+          Consulte<br>
+          <em id="heroWord">qualquer dado</em><br>
+          em segundos
+        </h1>
+        <div class="hero-type-line">
+          Pesquise agora: <span class="cursor" id="typed"></span>
+        </div>
+        <p class="hero-sub">
+          Sem burocracia. Sem mensalidade escondida. Resultados na hora para advogados, gestores de crédito, MEIs e qualquer pessoa que precisa de dados confiáveis.
+        </p>
+        <div class="hero-search-box">
+          <div class="hsb-label">Digite abaixo para consultar</div>
+          <div class="hsb-row">
+            <input id="hInput" type="text" placeholder="CPF, CNPJ, placa ou número do processo...">
+            <button class="hsb-btn" onclick="doSearch()">
+              <i class="fa-solid fa-magnifying-glass"></i> Consultar
+            </button>
+          </div>
+        </div>
+        <div class="hero-pills">
+          <div class="pill" onclick="setSearch('123.456.789-00')"><i class="fa-solid fa-user"></i> CPF</div>
+          <div class="pill" onclick="setSearch('12.345.678/0001-00')"><i class="fa-solid fa-building"></i> CNPJ</div>
+          <div class="pill" onclick="setSearch('ABC-1234')"><i class="fa-solid fa-car"></i> Placa</div>
+          <div class="pill" onclick="setSearch('0001234-55.2024.8.26.0100')"><i class="fa-solid fa-gavel"></i> Processo</div>
+        </div>
+      </div>
+
+      <div class="hero-panel">
+        <div class="hp-top">
+          <div class="hp-live"><span></span> Ao vivo</div>
+          <div class="hp-num" id="heroCount">12<em>.</em>438</div>
+          <div class="hp-desc">consultas realizadas hoje</div>
+          <div class="hp-bar"><div class="hp-bar-fill" id="barFill"></div></div>
+        </div>
+        <div class="hp-stats">
+          <div class="hp-stat">
+            <div class="hp-stat-val">98,7%</div>
+            <div class="hp-stat-key">Precisão</div>
+          </div>
+          <div class="hp-stat">
+            <div class="hp-stat-val">&lt;18s</div>
+            <div class="hp-stat-key">Tempo médio</div>
+          </div>
+          <div class="hp-stat">
+            <div class="hp-stat-val">5 mil+</div>
+            <div class="hp-stat-key">Clientes ativos</div>
+          </div>
+          <div class="hp-stat">
+            <div class="hp-stat-val">7 dias</div>
+            <div class="hp-stat-key">Garantia</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== HOW -->
+<section id="how">
+  <div class="wrap">
+    <div class="how-header rv">
+      <div class="label"><i class="fa-solid fa-route"></i> Como funciona</div>
+      <h2 class="how-title">3 passos.<br><em>Resultado imediato.</em></h2>
+    </div>
+    <div class="how-steps rv">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon"><i class="fa-solid fa-layer-group"></i></div>
+        <h3>Escolha seu plano</h3>
+        <p>Por dias com pacote de consultas ou avulso pay-per-use. Sem fidelidade, sem contrato.</p>
+        <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+        <h3>Faça a consulta</h3>
+        <p>Digite o CPF, CNPJ, placa ou número do processo. Nossa plataforma retorna dados verificados instantaneamente.</p>
+        <div class="step-connector"><i class="fa-solid fa-arrow-right"></i></div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+        <h3>Receba o relatório</h3>
+        <p>Download em PDF ou visualização online com todos os dados consolidados — situação fiscal, sócios, vínculos, processos ativos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== PLANS -->
+<section id="plans">
+  <div class="wrap">
+    <div class="plans-top rv">
+      <div>
+        <div class="label"><i class="fa-solid fa-tags"></i> Preços transparentes</div>
+        <h2 class="plans-title">Escolha seu<br><em>plano ideal</em></h2>
+      </div>
+      <div class="tab-toggle">
+        <button class="ttab on" onclick="switchP('days',this)"><i class="fa-solid fa-calendar-days"></i> Por dias</button>
+        <button class="ttab" onclick="switchP('avulso',this)"><i class="fa-solid fa-coins"></i> Avulso</button>
+      </div>
+    </div>
+
+    <!-- POR DIAS -->
+    <div class="bento rv" id="p-days">
+      <div class="pc">
+        <div class="pc-name">🌅 Diário</div>
+        <div class="pc-count">10 consultas</div>
+        <div class="pc-validity">Válido por 1 dia</div>
+        <div class="pc-price"><sup>R$</sup>25</div>
+        <div class="pc-each">= <strong>R$2,50 / consulta</strong></div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>Relatório completo PDF</li>
+          <li><i class="fa-solid fa-check"></i>Ativação imediata</li>
+          <li><i class="fa-solid fa-check"></i>Suporte WhatsApp</li>
+        </ul>
+        <div class="pc-extra">Excedente: <strong>R$1,50/consulta</strong></div>
+        <button class="btn-plan btn-plan-o" onclick="pickPlan('Diário — R$25')">Quero esse plano</button>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">📦 Quinzenal</div>
+        <div class="pc-count">200 consultas</div>
+        <div class="pc-validity">Válido por 15 dias</div>
+        <div class="pc-price"><sup>R$</sup>120</div>
+        <div class="pc-each">= <strong>R$0,60 / consulta</strong></div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>Relatório completo PDF</li>
+          <li><i class="fa-solid fa-check"></i>Histórico de consultas</li>
+          <li><i class="fa-solid fa-check"></i>Suporte prioritário</li>
+        </ul>
+        <div class="pc-extra">Excedente: <strong>R$1,50/consulta</strong></div>
+        <button class="btn-plan btn-plan-o" onclick="pickPlan('Quinzenal — R$120')">Quero esse plano</button>
+      </div>
+
+      <div class="pc hot">
+        <div class="pc-badge">⚡ Mais popular</div>
+        <div style="height:26px"></div>
+        <div class="pc-name">🚀 Mensal</div>
+        <div class="pc-count">500 consultas</div>
+        <div class="pc-validity">Válido por 30 dias</div>
+        <div class="pc-price"><sup>R$</sup>220</div>
+        <div class="pc-each">= <strong>R$0,44 / consulta</strong></div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>Exportação em lote CSV</li>
+          <li><i class="fa-solid fa-check"></i>Acesso à API REST</li>
+          <li><i class="fa-solid fa-check"></i>Suporte prioritário</li>
+        </ul>
+        <div class="pc-extra">Excedente: <strong>R$1,50/consulta</strong></div>
+        <button class="btn-plan btn-plan-p" onclick="pickPlan('Mensal — R$220')">Quero esse plano</button>
+      </div>
+
+      <div class="pc">
+        <div class="pc-name">⚡ Mensal Plus</div>
+        <div class="pc-count">2.000 consultas</div>
+        <div class="pc-validity">Válido por 30 dias</div>
+        <div class="pc-price"><sup>R$</sup>450</div>
+        <div class="pc-each">= <strong>R$0,22 / consulta</strong></div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>API + Webhook</li>
+          <li><i class="fa-solid fa-check"></i>Exportação CSV em lote</li>
+          <li><i class="fa-solid fa-check"></i>Gerente dedicado</li>
+        </ul>
+        <div class="pc-extra">Excedente: <strong>R$1,50/consulta</strong></div>
+        <button class="btn-plan btn-plan-o" onclick="pickPlan('Mensal Plus — R$450')">Quero esse plano</button>
+      </div>
+    </div>
+
+    <!-- AVULSO -->
+    <div class="bento rv bento-hide" id="p-avulso" style="grid-template-columns:repeat(2,1fr);max-width:620px;margin:0 auto">
+      <div class="pc">
+        <div class="pc-name">🎯 Starter</div>
+        <div class="pc-count">10 consultas</div>
+        <div class="pc-validity">Sem prazo de validade</div>
+        <div class="pc-price"><sup>R$</sup>35</div>
+        <div class="pc-each">= <strong>R$3,50 / consulta</strong></div>
+        <div class="nexp"><i class="fa-solid fa-infinity"></i> Créditos não expiram</div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>Relatório completo PDF</li>
+          <li><i class="fa-solid fa-check"></i>Use quando quiser</li>
+          <li><i class="fa-solid fa-check"></i>Suporte WhatsApp</li>
+        </ul>
+        <div class="pc-extra">Adicional: <strong>R$3,50/unidade</strong></div>
+        <button class="btn-plan btn-plan-o" onclick="pickPlan('Avulso Starter — R$35')">Quero esse plano</button>
+      </div>
+
+      <div class="pc hot">
+        <div class="pc-badge">⚡ Melhor custo-benefício</div>
+        <div style="height:26px"></div>
+        <div class="pc-name">💎 Pro</div>
+        <div class="pc-count">50 consultas</div>
+        <div class="pc-validity">Sem prazo de validade</div>
+        <div class="pc-price"><sup>R$</sup>140</div>
+        <div class="pc-each">= <strong>R$2,80 / consulta</strong></div>
+        <div class="nexp"><i class="fa-solid fa-infinity"></i> Créditos não expiram</div>
+        <ul class="pc-ul">
+          <li><i class="fa-solid fa-check"></i>CPF, CNPJ, Placa, Processos</li>
+          <li><i class="fa-solid fa-check"></i>Histórico permanente</li>
+          <li><i class="fa-solid fa-check"></i>Use no seu ritmo</li>
+          <li><i class="fa-solid fa-check"></i>Suporte prioritário</li>
+        </ul>
+        <div class="pc-extra">Adicional: <strong>R$2,80/unidade</strong></div>
+        <button class="btn-plan btn-plan-p" onclick="pickPlan('Avulso Pro — R$140')">Quero esse plano</button>
+      </div>
+    </div>
+
+    <p class="plans-note rv">
+      <i class="fa-solid fa-lock"></i>
+      Pagamento seguro via <strong>PIX</strong>, <strong>Cartão</strong> ou <strong>Boleto</strong> — Ativação imediata após confirmação
+    </p>
+  </div>
+</section>
+
+<!-- ========================================================== BENEFITS -->
+<section id="benefits">
+  <div class="wrap">
+    <div class="rv">
+      <div class="label"><i class="fa-solid fa-star"></i> Diferenciais</div>
+      <h2 class="how-title" style="max-width:500px">Por que usar a <em>QueroCon­sulta</em>?</h2>
+    </div>
+    <div class="ben-grid rv">
+      <div class="ben-card">
+        <div class="ben-ico ic-a"><i class="fa-solid fa-bolt"></i></div>
+        <h4>Resultado em até 30s</h4>
+        <p>Infraestrutura dedicada que retorna dados verificados em tempo real — sem fila, sem espera.</p>
+      </div>
+      <div class="ben-card">
+        <div class="ben-ico ic-c"><i class="fa-solid fa-rotate"></i></div>
+        <h4>Dados atualizados semanalmente</h4>
+        <p>Base sincronizada com fontes oficiais toda semana para máxima precisão nas suas análises.</p>
+      </div>
+      <div class="ben-card">
+        <div class="ben-ico ic-r"><i class="fa-solid fa-hand-peace"></i></div>
+        <h4>Sem fidelidade</h4>
+        <p>Cancele quando quiser. Sem contrato, sem multa. Você decide por quanto tempo quer usar.</p>
+      </div>
+      <div class="ben-card">
+        <div class="ben-ico ic-a"><i class="fa-brands fa-whatsapp"></i></div>
+        <h4>Suporte humano de verdade</h4>
+        <p>Fale com pessoas reais pelo WhatsApp. Sem robôs, sem script, sem espera absurda.</p>
+      </div>
+      <div class="ben-card">
+        <div class="ben-ico ic-c"><i class="fa-solid fa-code"></i></div>
+        <h4>API para integração</h4>
+        <p>Integre direto nos seus sistemas com nossa API REST documentada. Planos Mensal e Plus incluem acesso.</p>
+      </div>
+      <div class="ben-card">
+        <div class="ben-ico ic-r"><i class="fa-solid fa-shield-halved"></i></div>
+        <h4>Pagamento seguro</h4>
+        <p>PIX, cartão ou boleto. Todos com SSL e ambiente certificado. Ativação automática pós-pagamento.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== SOCIAL -->
+<section id="social">
+  <div class="wrap">
+    <div class="social-top rv">
+      <div>
+        <div class="label"><i class="fa-solid fa-users"></i> Prova social</div>
+        <h2 class="social-title">Quem usa<br><em>aprova</em></h2>
+      </div>
+      <div class="big-trust">
+        <div class="trust-pill"><i class="fa-solid fa-shield-halved ti-g"></i> Ambiente seguro SSL</div>
+        <div class="trust-pill"><i class="fa-solid fa-scale-balanced ti-a"></i> LGPD Compliant</div>
+        <div class="trust-pill"><i class="fa-solid fa-medal ti-r"></i> Garantia 7 dias</div>
+      </div>
+    </div>
+
+    <div class="testi-grid rv">
+      <div class="tc">
+        <div class="tc-head">
+          <div class="tc-av av1">RM</div>
+          <div class="tc-meta">
+            <h5>Ricardo Mendes</h5>
+            <small>Advogado — OAB/SP 198.432</small>
+          </div>
+          <div class="tc-stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+        </div>
+        <p class="tc-text">"Em menos de 20 segundos eu tinha o relatório de processos do cliente na tela, pronto pra incluir na petição. Usei vários serviços antes e nenhum chegou perto da QueroCon­sulta."</p>
+      </div>
+
+      <div class="tc">
+        <div class="tc-head">
+          <div class="tc-av av2">CP</div>
+          <div class="tc-meta">
+            <h5>Camila Prado</h5>
+            <small>Gestora de Crédito — Fintech SP</small>
+          </div>
+          <div class="tc-stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+        </div>
+        <p class="tc-text">"Nossa esteira de crédito reduziu o tempo de análise em 60% desde que integramos a API. Os dados são precisos e sempre atualizados. Já rodamos mais de 3 mil consultas no mês."</p>
+      </div>
+
+      <div class="tc">
+        <div class="tc-head">
+          <div class="tc-av av3">TS</div>
+          <div class="tc-meta">
+            <h5>Thiago Santos</h5>
+            <small>MEI — Comércio de veículos</small>
+          </div>
+          <div class="tc-stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i>
+          </div>
+        </div>
+        <p class="tc-text">"Uso todo dia pra checar placa antes de fechar negócio. Já evitei prejuízo com veículo com restrição judicial. O plano avulso é perfeito — crédito não expira, uso no meu ritmo."</p>
+      </div>
+
+      <div class="tc">
+        <div class="tc-head">
+          <div class="tc-av av4">AL</div>
+          <div class="tc-meta">
+            <h5>Ana Lima</h5>
+            <small>Analista de Risco — Seguradora BH</small>
+          </div>
+          <div class="tc-stars">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+        </div>
+        <p class="tc-text">"O suporte é incrível. Mandei mensagem no WhatsApp e em 5 minutos resolveram minha dúvida. Parece pequeno, mas faz toda diferença quando você tá no meio de uma análise urgente."</p>
+      </div>
+    </div>
+
+    <div class="counter-banner rv">
+      <div class="cb-left">
+        <div class="hp-live" style="margin-bottom:12px"><span></span> Ao vivo agora</div>
+        <div class="cb-num" id="cbCount">12.438</div>
+        <div class="cb-desc">consultas realizadas hoje na plataforma</div>
+      </div>
+      <div class="cb-right">
+        <div class="cb-stat">
+          <div class="cb-stat-val">5.000+</div>
+          <div class="cb-stat-key">Clientes ativos</div>
+        </div>
+        <div class="cb-stat">
+          <div class="cb-stat-val">4</div>
+          <div class="cb-stat-key">Tipos de consulta</div>
+        </div>
+        <div class="cb-stat">
+          <div class="cb-stat-val">98,7%</div>
+          <div class="cb-stat-key">Precisão dos dados</div>
+        </div>
+        <div class="cb-stat">
+          <div class="cb-stat-val">7 dias</div>
+          <div class="cb-stat-key">Garantia total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="label rv"><i class="fa-solid fa-circle-question"></i> Dúvidas frequentes</div>
+    <div class="faq-layout">
+      <div class="faq-left rv">
+        <h3>Ainda tem <em>dúvidas</em>?</h3>
+        <p>Respondemos as perguntas mais comuns. Se não encontrar a resposta que precisa, nossa equipe está disponível agora pelo WhatsApp.</p>
+        <a href="https://wa.me/5521967519632" target="_blank" class="btn-wpp">
+          <i class="fa-brands fa-whatsapp"></i> Falar no WhatsApp
+        </a>
+      </div>
+      <div class="faqs rv-r">
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Como recebo o resultado da consulta? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>Os resultados aparecem diretamente na plataforma em até 30 segundos. Você pode visualizar online ou baixar o relatório completo em PDF com todos os dados organizados.</p></div>
+        </div>
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Os créditos do plano avulso expiram? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>Não! Os créditos do plano avulso não têm prazo de validade. Compre uma vez e use quando quiser, no seu próprio ritmo. Os créditos ficam disponíveis na sua conta indefinidamente.</p></div>
+        </div>
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Posso consultar em lote? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>Sim! Nos planos Mensal e Mensal Plus você pode fazer upload de planilha CSV para consulta em lote. Via API não há limite de integração — ideal para gestores de crédito e analistas.</p></div>
+        </div>
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Meus dados estão seguros? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>Completamente. Toda comunicação usa criptografia SSL/TLS. Seguimos a LGPD (Lei 13.709/2018) e nunca compartilhamos seus dados com terceiros. Servidores em datacenters certificados ISO 27001.</p></div>
+        </div>
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Quais dados posso consultar? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>CPF (situação cadastral, vínculos), CNPJ (sócios, situação fiscal), Placa de veículo (proprietário, débitos, restrições) e Processos judiciais (por nome, CPF ou CNPJ em todos os tribunais).</p></div>
+        </div>
+        <div class="fi">
+          <button class="fq" onclick="faqToggle(this)">Quanto tempo leva a ativação? <i class="fa-solid fa-chevron-down"></i></button>
+          <div class="fa-body"><p>PIX: ativação imediata em menos de 1 minuto. Cartão: até 5 minutos. Boleto: após confirmação bancária (1 dia útil). Você recebe e-mail de boas-vindas com acesso assim que sua conta for ativada.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== CTA -->
+<section id="cta">
+  <div class="wrap">
+    <div class="cta-box rv">
+      <div class="cta-text">
+        <div class="label" style="margin-bottom:16px"><i class="fa-solid fa-rocket"></i> Comece agora</div>
+        <h2>Pronto para consultar<br>dados com <em>precisão</em>?</h2>
+        <p>Crie sua conta gratuitamente e ganhe 3 consultas de bônus.<br>Sem cartão de crédito. Ativação imediata.</p>
+      </div>
+      <div class="cta-btns">
+        <button class="btn-cta-p" onclick="pickPlan('Conta gratuita — 3 bônus')">
+          <i class="fa-solid fa-rocket"></i> Criar conta grátis
+        </button>
+        <a href="https://wa.me/5521967519632" target="_blank" class="btn-cta-w">
+          <i class="fa-brands fa-whatsapp"></i> Falar agora
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================== FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a href="#" class="logo">
+          <div class="logo-icon"><i class="fa-solid fa-database"></i></div>
+          Quero<em>Consulta</em>
+        </a>
+        <p class="foot-logo-p">A plataforma de consultas de dados mais ágil do Brasil. Para advogados, MEIs, analistas e gestores que precisam de resultados sem burocracia.</p>
+      </div>
+      <div class="foot-col">
+        <h6>Plataforma</h6>
+        <ul>
+          <li><a href="#how">Como funciona</a></li>
+          <li><a href="#plans">Planos e preços</a></li>
+          <li><a href="#benefits">Benefícios</a></li>
+          <li><a href="#">API Docs</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h6>Consultas</h6>
+        <ul>
+          <li><a href="#">Consulta de CPF</a></li>
+          <li><a href="#">Consulta de CNPJ</a></li>
+          <li><a href="#">Consulta de Placa</a></li>
+          <li><a href="#">Processos Judiciais</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h6>Suporte</h6>
+        <ul>
+          <li><a href="#faq">Perguntas frequentes</a></li>
+          <li><a href="https://wa.me/5521967519632" target="_blank">WhatsApp</a></li>
+          <li><a href="#">Política de Privacidade</a></li>
+          <li><a href="#">Termos de Uso</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bot">
+      <p>© 2025 QueroCon­sulta. Todos os direitos reservados. CNPJ 00.000.000/0001-00</p>
+      <div class="foot-seals">
+        <div class="fseal"><i class="fa-solid fa-shield-halved"></i> SSL Seguro</div>
+        <div class="fseal"><i class="fa-solid fa-scale-balanced"></i> LGPD</div>
+        <div class="fseal"><i class="fa-solid fa-medal"></i> 7 dias garantia</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- FLOAT WPP -->
+<div class="wpp-float">
+  <div class="wpp-tip">💬 Fale conosco agora</div>
+  <a href="https://wa.me/5521967519632" target="_blank" class="wpp-btn" aria-label="WhatsApp">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+</div>
+
+<!-- ============================================================
+     JS
+     ============================================================ -->
+<script>
+/* topbar */
+function closeBar(){
+  const b=document.getElementById('topbar');
+  b.style.cssText='opacity:0;height:0;padding:0;overflow:hidden;transition:all .3s';
+  document.getElementById('nav').classList.add('nobar');
+  document.getElementById('mobMenu').style.top='64px';
+}
+
+/* hamburger */
+const hbg=document.getElementById('hbg'),mob=document.getElementById('mobMenu');
+hbg.addEventListener('click',()=>{hbg.classList.toggle('open');mob.classList.toggle('open')});
+function mClose(){hbg.classList.remove('open');mob.classList.remove('open')}
+
+/* nav shadow */
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').style.boxShadow=window.scrollY>30?'0 4px 30px rgba(0,0,0,.5)':'none'
+});
+
+/* animated bar fill on load */
+setTimeout(()=>{document.getElementById('barFill').style.width='78%'},600);
+
+/* typing effect */
+const words=['CPF','CNPJ','Placa','Processos'];
+const heroWords=['CPF','CNPJ','placa','processos'];
+let wi=0,ci=0,del=false;
+const tel=document.getElementById('typed');
+const hwEl=document.getElementById('heroWord');
+function typeIt(){
+  const w=words[wi];
+  if(!del){
+    tel.textContent=w.slice(0,++ci);
+    hwEl.textContent=heroWords[wi];
+    if(ci===w.length){del=true;setTimeout(typeIt,1800);return}
+    setTimeout(typeIt,80);
+  } else {
+    tel.textContent=w.slice(0,--ci);
+    if(ci===0){del=false;wi=(wi+1)%words.length;setTimeout(typeIt,280);return}
+    setTimeout(typeIt,45);
+  }
+}
+setTimeout(typeIt,900);
+
+/* live counter */
+let cnt=12438;
+function tick(){
+  cnt+=Math.floor(Math.random()*3);
+  const f=cnt.toLocaleString('pt-BR');
+  const e1=document.getElementById('heroCount');
+  const e2=document.getElementById('cbCount');
+  if(e1) e1.innerHTML=f.replace('.','<em>.</em>');
+  if(e2) e2.textContent=f;
+}
+setInterval(tick,3500);
+
+/* plan tabs */
+function switchP(tab,btn){
+  document.querySelectorAll('.ttab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['p-days','p-avulso'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(id==='p-'+tab){el.classList.remove('bento-hide')}
+    else{el.classList.add('bento-hide')}
+  });
+}
+
+/* set search pill */
+function setSearch(v){
+  document.getElementById('hInput').value=v;
+  document.getElementById('hInput').focus();
+}
+
+/* search modal */
+function doSearch(){
+  const v=document.getElementById('hInput').value.trim();
+  if(!v){
+    const box=document.querySelector('.hero-search-box');
+    box.style.borderColor='#FF6B35';
+    box.style.boxShadow='0 0 0 3px rgba(255,107,53,.15)';
+    setTimeout(()=>{box.style.borderColor='';box.style.boxShadow=''},1800);
+    document.getElementById('hInput').focus();
+    return;
+  }
+  showModal(`
+    <div style="width:52px;height:52px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.22);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 18px">🔍</div>
+    <h3 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:8px">Modo demonstração</h3>
+    <p style="color:#7A7870;font-size:.85rem;margin-bottom:8px">Consulta solicitada para:</p>
+    <div style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:10px 14px;color:#F5A623;font-weight:700;font-size:1rem;margin-bottom:18px;word-break:break-all">"${v}"</div>
+    <p style="color:#7A7870;font-size:.85rem;line-height:1.65;margin-bottom:24px">Para receber o resultado real, fale com nosso especialista no <strong style="color:#25D366">WhatsApp</strong> ou crie sua conta e comece com 3 consultas grátis.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="document.getElementById('qcModal').remove()" style="flex:1;min-width:130px;background:linear-gradient(135deg,#F5A623,#FF6B35);color:#0C0C0E;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;padding:14px;border:none;border-radius:10px;cursor:pointer">🚀 Criar conta grátis</button>
+      <a href="https://wa.me/5521967519632" target="_blank" style="flex:1;min-width:130px;display:flex;align-items:center;justify-content:center;gap:6px;background:#25D366;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;padding:14px;border-radius:10px;text-decoration:none"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+    </div>
+  `);
+}
+
+/* pick plan modal */
+function pickPlan(name){
+  showModal(`
+    <div style="width:52px;height:52px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.22);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 18px">🎉</div>
+    <h3 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:8px">Plano selecionado!</h3>
+    <div style="background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:10px 14px;color:#F5A623;font-weight:700;font-size:.98rem;margin-bottom:18px">${name}</div>
+    <p style="color:#7A7870;font-size:.85rem;line-height:1.65;margin-bottom:24px">Em produção você seria redirecionado ao checkout. Para contratar agora, fale com nosso time no <strong style="color:#25D366">WhatsApp</strong> e ativamos sua conta em minutos.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="https://wa.me/5521967519632" target="_blank" style="flex:1;min-width:130px;display:flex;align-items:center;justify-content:center;gap:6px;background:#25D366;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;padding:14px;border-radius:10px;text-decoration:none"><i class="fa-brands fa-whatsapp"></i> Contratar agora</a>
+      <button onclick="document.getElementById('qcModal').remove()" style="flex:1;min-width:130px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#F2F0EB;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.05em;text-transform:uppercase;padding:14px;border-radius:10px;cursor:pointer">Voltar ao site</button>
+    </div>
+  `);
+}
+
+function showModal(html){
+  const existing=document.getElementById('qcModal');
+  if(existing)existing.remove();
+  const m=document.createElement('div');
+  m.id='qcModal';
+  m.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;animation:mfadeIn .2s ease';
+  m.innerHTML=`<div style="background:#1C1C22;border:1px solid rgba(245,166,35,.22);border-radius:20px;padding:36px;max-width:420px;width:100%;text-align:center;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.6)"><button onclick="document.getElementById('qcModal').remove()" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.07);border:none;border-radius:50%;width:28px;height:28px;color:#7A7870;cursor:pointer;font-size:.9rem">✕</button>${html}</div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)m.remove()});
+}
+
+/* faq */
+function faqToggle(btn){
+  const item=btn.closest('.fi');
+  const open=item.classList.contains('open');
+  document.querySelectorAll('.fi.open').forEach(i=>i.classList.remove('open'));
+  if(!open)item.classList.add('open');
+}
+
+/* scroll reveal */
+const rvEls=document.querySelectorAll('.rv,.rv-r');
+const rvObs=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){
+      const el=e.target;
+      const sibs=Array.from(el.parentElement.children).filter(c=>c.classList.contains('rv')||c.classList.contains('rv-r'));
+      const idx=sibs.indexOf(el);
+      el.style.transitionDelay=(idx*0.07)+'s';
+      el.classList.add('in');
+      rvObs.unobserve(el);
+    }
+  });
+},{threshold:.1});
+rvEls.forEach(el=>rvObs.observe(el));
+
+/* modal anim keyframe */
+const ks=document.createElement('style');
+ks.textContent='@keyframes mfadeIn{from{opacity:0}to{opacity:1}}';
+document.head.appendChild(ks);
+</script>
+</body>
+</html>
